@@ -50,6 +50,13 @@ def add_repo(scm_url):
 def clone():
     # TODO clone git url
 
+    pre_script = BASE_DIR / 'pre.sh'
+
+    if pre_script.exists():
+        # TODO pre by os
+        info('Executing pre script')
+        run(str(pre_script.absolute()))
+
     config = open_configuration()
     scm_urls = config.get('scm', [])  # type: List[str]
     for url in scm_urls:
@@ -66,6 +73,15 @@ def clone():
             link_path.symlink_to(target_path)
         else:
             info('{target} already exists'.format_map(locals()))
+
+
+@cli.command('edit-pre')
+def edit_pre():
+    pre_script = BASE_DIR / 'pre.sh'
+    run(['vim', str(pre_script.absolute())])
+    repo = ConfigRepo()
+    repo.add('pre.sh')
+    repo.commit("Updated pre script".format_map(locals()))
 
 
 @cli.command('init')
