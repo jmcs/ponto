@@ -1,4 +1,5 @@
 from clickclick import info
+from pathlib import Path
 import click
 
 from .configuration import open_configuration, save_configuration
@@ -7,13 +8,18 @@ from .scm import GitRepository
 
 cli = click.Group()
 
+# TODO drive support
+# TODO wget support
+# TODO command to add links
+
 
 @cli.command('add-repo')
 @click.argument('scm_url')
 def add_repo(scm_url):
     config = open_configuration()
-    repo = GitRepository(scm_url)
-    repo.clone()
+    repository = GitRepository(scm_url)
+    info('Cloning {repo}'.format(repo=repository))
+    repository.clone()
     config['scm'].add(scm_url)
     save_configuration(config)
 
@@ -29,6 +35,13 @@ def clone():
         repository = GitRepository(url)
         info('Cloning {repo}'.format(repo=repository))
         repository.clone()
+
+    links = config.get('ln')
+    for target, link in links.items():
+        link_path = Path(link).expanduser()
+        target_path = Path(target).expanduser()
+        info('Linking {target} to {link_path}'.format_map(locals()))
+        link_path.symlink_to(target_path)
 
 
 @cli.command('init')
