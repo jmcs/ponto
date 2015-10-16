@@ -15,10 +15,18 @@ class Drive:
             # TODO context manager
             cwd = Path.cwd()
             os.chdir(str(origin_path))
-            run(['drive', 'init'])
-            run(['drive', 'pull', drive_name], input=b'y\n')
-            os.chdir(str(cwd))
+            try:
+                run(['drive', 'init'])
+                run(['drive', 'pull', drive_name], input=b'y\n')
+            except FileNotFoundError:
+                print("Drive not installed")
+                return
+            finally:
+                os.chdir(str(cwd))
 
         link_path = Path.home() / Path(local_name)
         target_path = origin_path / drive_name
-        link_path.symlink_to(target_path)
+        try:
+            link_path.symlink_to(target_path)
+        except FileExistsError:
+            print("Link already exists")

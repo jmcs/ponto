@@ -3,6 +3,7 @@ from pathlib import Path
 from subprocess import run
 import click
 import os
+import platform
 from .configuration import open_configuration, save_configuration
 from .drive import Drive
 from .paths import BASE_DIR, CONFIG_PATH, DRIVE_DIR, relative_to_home
@@ -61,16 +62,23 @@ def add_repo(scm_url):
 
 
 @cli.command('clone')
-# @click.argument("git_url")
-def clone():
+@click.argument("GIT_URL")
+def clone(git_url: str):
     # TODO clone git url
+    repo = ConfigRepo()
+    info("Cloning Repository")
+    repo.clone(git_url)
 
     pre_script = BASE_DIR / 'pre.sh'
 
     if pre_script.exists():
-        # TODO pre by os
         info('Executing pre script')
         run(str(pre_script.absolute()))
+
+    system_pre_script = BASE_DIR / 'pre-{system}.sh'.format(system=platform.system().lower())
+    if system_pre_script.exists():
+        info('Executing pre script for this OS')
+        run(str(system_pre_script.absolute()))
 
     config = open_configuration()
 
@@ -96,7 +104,7 @@ def clone():
             info('Linking {target_path} to {link_path}'.format_map(locals()))
             link_path.symlink_to(target_path)
         else:
-            info('{target} already exists'.format_map(locals()))
+            info('{link} already exists'.format_map(locals()))
 
     # TODO dotfiles
 
@@ -105,6 +113,7 @@ def clone():
 def edit_pre():
     pre_script = BASE_DIR / 'pre.sh'
     run(['vim', str(pre_script.absolute())])
+    pre_script.chmod(0o750)
     repo = ConfigRepo()
     repo.add('pre.sh')
     repo.commit("Updated pre script".format_map(locals()))

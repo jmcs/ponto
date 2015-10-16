@@ -53,6 +53,9 @@ class ConfigRepo():
     def init(self):
         run(['git', 'init', str(BASE_DIR)])
 
+    def clone(self, repo_url):
+        run(['git', 'clone', repo_url, str(BASE_DIR)])
+
     def commit(self, message):
         cwd = Path.cwd()
         os.chdir(str(BASE_DIR))
