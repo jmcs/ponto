@@ -26,6 +26,10 @@ def add_link(target, link_name):
     link_path.expanduser().symlink_to(target_path.expanduser())
     config['ln'][str(target_path)] = str(link_path)
     save_configuration(config)
+    repo = ConfigRepo()
+    repo.add('ponto.yaml')
+    repo.commit('Added symlink from {target_path} to {link_path}'.format_map(locals()))
+    repo.push()
 
 
 @cli.command('add-repo')
@@ -37,7 +41,10 @@ def add_repo(scm_url):
     repository.clone()
     config['scm'].add(scm_url)
     save_configuration(config)
-
+    repo = ConfigRepo()
+    repo.add('ponto.yaml')
+    repo.commit("Added '{repository}' to the repository list".format_map(locals()))
+    repo.push()
 
 @cli.command('clone')
 # @click.argument("git_url")
