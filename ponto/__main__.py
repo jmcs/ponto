@@ -1,31 +1,21 @@
 from clickclick import info
-from pathlib import Path
 import click
-import yaml
 
+from .configuration import open_configuration, save_configuration
+from .paths import BASE_DIR, CONFIG_PATH
 from .scm import GitRepository
 
 cli = click.Group()
 
-BASE_DIR = Path.home() / '.ponto'  # type: Path
 
-
-# TODO Init to create base structure
-# TODO git-add to clone repository
-
-@cli.command('init')
-def init():
-    info("Creating directory structure")
-    if not BASE_DIR.exists():
-        BASE_DIR.mkdir()
-
-    config_path = BASE_DIR / 'ponto.yaml'
-
-    info("Creating config files")
-    if not config_path.exists():
-        empty_config = {'SCM': set()}
-        with config_path.open('w') as config_file:
-            yaml.safe_dump(empty_config, config_file, default_flow_style=False)
+@cli.command('add-repo')
+@click.argument('scm_url')
+def add_repo(scm_url):
+    config = open_configuration()
+    repo = GitRepository(scm_url)
+    repo.clone()
+    config['scm'].add(scm_url)
+    save_configuration(config)
 
 
 @cli.command('clone')
@@ -33,14 +23,27 @@ def init():
 def clone():
     # TODO clone git url
 
-    config_path = BASE_DIR / 'ponto.yaml'
-    with config_path.open() as config_file:
-        config = yaml.load(config_file)
+    config = open_configuration()
     scm_urls = config.get('scm', [])  # type: List[str]
     for url in scm_urls:
         repository = GitRepository(url)
         info('Cloning {repo}'.format(repo=repository))
         repository.clone()
+
+
+@cli.command('init')
+def init():
+
+    # TODO receive remote and push
+
+    info("Creating directory structure")
+    if not BASE_DIR.exists():
+        BASE_DIR.mkdir()
+
+    info("Creating config files")
+    if not CONFIG_PATH.exists():
+        empty_config = {'scm': set()}
+        save_configuration(empty_config)
 
 
 cli()
