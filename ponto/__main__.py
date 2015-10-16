@@ -4,7 +4,8 @@ from subprocess import run
 import click
 import os
 from .configuration import open_configuration, save_configuration
-from .paths import BASE_DIR, CONFIG_PATH, relative_to_home
+from .drive import Drive
+from .paths import BASE_DIR, CONFIG_PATH, DRIVE_DIR, relative_to_home
 from .scm import GitRepository, ConfigRepo
 
 cli = click.Group()
@@ -13,6 +14,20 @@ cli = click.Group()
 # TODO drive support
 # TODO wget support
 # TODO command to add links
+
+@cli.command('add-drive')
+@click.argument('ACCOUNT')
+@click.argument('LOCAL_NAME')
+@click.argument('DRIVE_NAME')
+def add_drive(account, local_name, drive_name):
+    config = open_configuration()
+    drive = Drive()
+    drive.init(account, local_name, drive_name)
+    config['drive'][local_name] = {'account': account, 'drive_name': local_name}
+    save_configuration(config)
+    repo = ConfigRepo()
+    repo.add('ponto.yaml')
+    repo.commit('Added drive from {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
 
 
 @cli.command('add-link')
@@ -58,6 +73,15 @@ def clone():
         run(str(pre_script.absolute()))
 
     config = open_configuration()
+
+    drive_points = config.get('drive', {})  # type: dict[str, dict]
+    drive = Drive()
+    for local_name, point in drive_points.items():
+        account = point['account']
+        drive_name = point['drive_name']
+        info('Cloning {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
+        drive.init(account, local_name, drive_name)
+
     scm_urls = config.get('scm', [])  # type: List[str]
     for url in scm_urls:
         repository = GitRepository(url)
@@ -73,6 +97,8 @@ def clone():
             link_path.symlink_to(target_path)
         else:
             info('{target} already exists'.format_map(locals()))
+
+    # TODO dotfiles
 
 
 @cli.command('edit-pre')
@@ -99,18 +125,30 @@ def init(git_url):
         os.chdir(str(BASE_DIR))
         run(['git', 'remote', 'add', 'origin', git_url])
         os.chdir(str(cwd))
+
     info("Creating directory structure")
     if not BASE_DIR.exists():
         BASE_DIR.mkdir()
 
+    if not DRIVE_DIR.exists():
+        DRIVE_DIR.mkdir()
+
+    gitignore_path = BASE_DIR / '.gitignore'
+    if not gitignore_path.exists():
+        with gitignore_path.open('w') as gitignore:
+            gitignore.write(b'drive\n')
+
     info("Creating config files")
     if not CONFIG_PATH.exists():
-        empty_config = {'scm': set(), 'ln': dict()}
+        empty_config = {'drive': dict(),
+                        'scm': set(),
+                        'ln': dict()}
         save_configuration(empty_config)
 
     cwd = Path.cwd()
     os.chdir(str(BASE_DIR))
     repo.add('ponto.yaml')
+    repo.add('.gitignore')
     repo.commit('Initialization')
     repo.push()
     os.chdir(str(cwd))
