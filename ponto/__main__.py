@@ -1,12 +1,14 @@
 from clickclick import info
 from pathlib import Path
+from subprocess import run
 import click
-
+import os
 from .configuration import open_configuration, save_configuration
 from .paths import BASE_DIR, CONFIG_PATH, relative_to_home
-from .scm import GitRepository
+from .scm import GitRepository, ConfigRepo
 
 cli = click.Group()
+
 
 # TODO drive support
 # TODO wget support
@@ -61,10 +63,20 @@ def clone():
 
 
 @cli.command('init')
-def init():
-
+@click.argument("GIT_URL")
+def init(git_url):
+    repo = ConfigRepo()
     # TODO receive remote and push
 
+    info("Setting up git repository")
+    git_folder = BASE_DIR / '.git'
+    if not git_folder.exists():
+        repo.init()
+        # TODO context manager
+        cwd = Path.cwd()
+        os.chdir(str(BASE_DIR))
+        run(['git', 'remote', 'add', 'origin', git_url])
+        os.chdir(str(cwd))
     info("Creating directory structure")
     if not BASE_DIR.exists():
         BASE_DIR.mkdir()
@@ -73,6 +85,19 @@ def init():
     if not CONFIG_PATH.exists():
         empty_config = {'scm': set(), 'ln': dict()}
         save_configuration(empty_config)
+
+    cwd = Path.cwd()
+    os.chdir(str(BASE_DIR))
+    repo.add('ponto.yaml')
+    repo.commit('Initialization')
+    repo.push()
+    os.chdir(str(cwd))
+
+
+@cli.command('push')
+def push():
+    repo = ConfigRepo()
+    repo.push()
 
 
 cli()

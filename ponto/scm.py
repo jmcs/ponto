@@ -1,16 +1,18 @@
 from pathlib import Path
 from subprocess import run
 import re
+import os
+from .paths import BASE_DIR
 
 SSH_REGEX = re.compile(r"git@(?P<host>.*):(?P<owner>.*?)\/(?P<repo>.*?)\.git")
 
-class InvalidRepo(Exception):
 
+class InvalidRepo(Exception):
     def __init__(self, url):
         self.url = url
 
-class GitRepository:
 
+class GitRepository:
     def __init__(self, url):
         self.url = url
         match = SSH_REGEX.match(url)
@@ -39,3 +41,26 @@ class GitRepository:
             run(['git', 'clone', self.url, str(self.local_path)])
         else:
             print('Git repository {repo} already exists'.format(repo=self))
+
+
+class ConfigRepo():
+    def add(self, filename):
+        cwd = Path.cwd()
+        os.chdir(str(BASE_DIR))
+        run(['git', 'add', filename])
+        os.chdir(str(cwd))
+
+    def init(self):
+        run(['git', 'init', str(BASE_DIR)])
+
+    def commit(self, message):
+        cwd = Path.cwd()
+        os.chdir(str(BASE_DIR))
+        run(['git', 'commit', '-m', message])
+        os.chdir(str(cwd))
+
+    def push(self):
+        cwd = Path.cwd()
+        os.chdir(str(BASE_DIR))
+        run(['git', 'push'])
+        os.chdir(str(cwd))
