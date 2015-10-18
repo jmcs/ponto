@@ -6,15 +6,15 @@ import os
 import platform
 from .configuration import open_configuration, save_configuration
 from .drive import Drive
-from .paths import BASE_DIR, CONFIG_PATH, DRIVE_DIR, relative_to_home
+from .paths import BASE_DIR, CONFIG_PATH, DRIVE_DIR, HOME_PATH, relative_to_home
 from .scm import GitRepository, ConfigRepo
 
 cli = click.Group()
 
 
-# TODO drive support
+# TODO remove support
+# TODO detect dependencies
 # TODO wget support
-# TODO command to add links
 
 @cli.command('add-drive')
 @click.argument('ACCOUNT')
@@ -64,7 +64,6 @@ def add_repo(scm_url):
 @cli.command('clone')
 @click.argument("GIT_URL")
 def clone(git_url: str):
-    # TODO clone git url
     repo = ConfigRepo()
     info("Cloning Repository")
     repo.clone(git_url)
@@ -87,6 +86,7 @@ def clone(git_url: str):
     for local_name, point in drive_points.items():
         account = point['account']
         drive_name = point['drive_name']
+        # TODO ignore on error
         info('Cloning {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
         drive.init(account, local_name, drive_name)
 
@@ -111,6 +111,7 @@ def clone(git_url: str):
 
 @cli.command('edit-pre')
 def edit_pre():
+    # TODO edit os specific scripts
     pre_script = BASE_DIR / 'pre.sh'
     run(['vim', str(pre_script.absolute())])
     pre_script.chmod(0o750)
@@ -167,6 +168,41 @@ def init(git_url):
 def push():
     repo = ConfigRepo()
     repo.push()
+
+
+@cli.command('store')
+@click.argument('PATH')
+def store(path):
+    path = Path(path)
+
+    if path.is_symlink():
+        print("{path} is already a symlink.".format(path=path))
+        return
+
+    print("Storing {path}".format(path=path))
+    relative_path = path.relative_to(Path.home())
+
+    try:
+        HOME_PATH.mkdir(parents=True)
+    except FileExistsError:
+        pass
+
+    destination = HOME_PATH / relative_path
+
+    try:
+        destination.parent.mkdir(parents=True)
+    except FileExistsError:
+        pass
+
+    path.rename(destination)
+    path.symlink_to(destination)
+
+    repo = ConfigRepo()
+    repo.add(str('home' / relative_path))
+    repo.commit("Storing {path}".format(path=path))
+
+    # TODO error if not inside home
+
 
 
 cli()
