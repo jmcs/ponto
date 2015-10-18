@@ -70,43 +70,16 @@ def clone(git_url: str):
 
     pre_script = BASE_DIR / 'pre.sh'
 
-    if pre_script.exists():
-        info('Executing pre script')
-        run(str(pre_script.absolute()))
-
     system_pre_script = BASE_DIR / 'pre-{system}.sh'.format(system=platform.system().lower())
     if system_pre_script.exists():
         info('Executing pre script for this OS')
         run(str(system_pre_script.absolute()))
 
-    config = open_configuration()
+    if pre_script.exists():
+        info('Executing pre script')
+        run(str(pre_script.absolute()))
 
-    drive_points = config.get('drive', {})  # type: dict[str, dict]
-    drive = Drive()
-    for local_name, point in drive_points.items():
-        account = point['account']
-        drive_name = point['drive_name']
-        # TODO ignore on error
-        info('Cloning {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
-        drive.init(account, local_name, drive_name)
-
-    scm_urls = config.get('scm', [])  # type: List[str]
-    for url in scm_urls:
-        repository = GitRepository(url)
-        info('Cloning {repo}'.format(repo=repository))
-        repository.clone()
-
-    links = config.get('ln')
-    for target, link in links.items():
-        link_path = Path(link).expanduser()
-        target_path = Path(target).expanduser()
-        if not link_path.exists():
-            info('Linking {target_path} to {link_path}'.format_map(locals()))
-            link_path.symlink_to(target_path)
-        else:
-            info('{link} already exists'.format_map(locals()))
-
-    # TODO dotfiles
+    sync()
 
 
 @cli.command('edit-pre')
@@ -203,6 +176,37 @@ def store(path):
 
     # TODO error if not inside home
 
+
+@cli.command('sync')
+def sync():
+    config = open_configuration()
+
+    drive_points = config.get('drive', {})  # type: dict[str, dict]
+    drive = Drive()
+    for local_name, point in drive_points.items():
+        account = point['account']
+        drive_name = point['drive_name']
+        # TODO ignore on error
+        info('Cloning {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
+        drive.init(account, local_name, drive_name)
+
+    scm_urls = config.get('scm', [])  # type: List[str]
+    for url in scm_urls:
+        repository = GitRepository(url)
+        info('Cloning {repo}'.format(repo=repository))
+        repository.clone()
+
+    links = config.get('ln')
+    for target, link in links.items():
+        link_path = Path(link).expanduser()
+        target_path = Path(target).expanduser()
+        if not link_path.exists():
+            info('Linking {target_path} to {link_path}'.format_map(locals()))
+            link_path.symlink_to(target_path)
+        else:
+            info('{link} already exists'.format_map(locals()))
+
+            # TODO dotfiles
 
 
 cli()
