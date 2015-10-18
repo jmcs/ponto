@@ -140,6 +140,10 @@ def init(git_url):
 @cli.command('push')
 def push():
     repo = ConfigRepo()
+    if HOME_PATH.exists():
+        repo.add('home')
+        # TODO try catch error
+        repo.commit('Included local changes')
     repo.push()
 
 
@@ -208,5 +212,13 @@ def sync():
 
             # TODO dotfiles
 
-
+    for path in HOME_PATH.glob('**/*'):
+        relative_path = path.relative_to(HOME_PATH)
+        link_path = Path.home() / relative_path
+        if link_path.exists():
+            # TODO offer to replace
+            print("~/{relative_path} already exists.".format_map(locals()))
+        else:
+            print("Linking ~/{relative_path}.".format_map(locals()))
+            link_path.symlink_to(path)
 cli()
