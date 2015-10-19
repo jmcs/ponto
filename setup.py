@@ -11,6 +11,7 @@ setup(
     version=version,
     description='Backup Manager',
     author='João Santos',
+    author_email='jmcs@jsantos.eu',
     url='https://github.com/jmcs/ponto',
     license='MIT License',
     install_requires=['click', 'pathlib', 'clickclick', 'requests', 'pip'],
