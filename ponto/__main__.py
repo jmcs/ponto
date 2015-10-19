@@ -95,7 +95,9 @@ def edit_pre(system):
     pre_script.chmod(0o750)
     repo = ConfigRepo()
     repo.add('pre.sh')
-    repo.commit("Updated pre script".format_map(locals()))
+    commit_message = input('Commit message: ')
+    commit_message = commit_message or "Updated {}".format(filename)
+    repo.commit(commit_message)
 
 
 @cli.command('init')
