@@ -55,11 +55,21 @@ class ConfigRepo():
 
     def clone(self, repo_url):
         run(['git', 'clone', repo_url, str(BASE_DIR)])
+        cwd = Path.cwd()
+        os.chdir(str(BASE_DIR))
+        run(['git', 'branch', '--set-upstream-to=origin/master', 'master'])
+        os.chdir(str(cwd))
 
     def commit(self, message):
         cwd = Path.cwd()
         os.chdir(str(BASE_DIR))
         run(['git', 'commit', '-m', message])
+        os.chdir(str(cwd))
+
+    def pull(self):
+        cwd = Path.cwd()
+        os.chdir(str(BASE_DIR))
+        run(['git', 'pull', '--ff'])
         os.chdir(str(cwd))
 
     def push(self):

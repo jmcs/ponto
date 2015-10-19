@@ -79,7 +79,7 @@ def clone(git_url: str):
         info('Executing pre script')
         run(str(pre_script.absolute()))
 
-    sync()
+    sync(pull=False)
 
 
 @cli.command('edit-pre')
@@ -182,7 +182,11 @@ def store(path):
 
 
 @cli.command('sync')
-def sync():
+def sync(pull=True):
+    if pull:
+        repo = ConfigRepo()
+        repo.pull()
+
     config = open_configuration()
 
     drive_points = config.get('drive', {})  # type: dict[str, dict]
