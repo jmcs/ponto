@@ -88,15 +88,14 @@ def clone(git_url: str):
 @click.option('--linux', 'system', flag_value='linux')
 @click.option('--darwin', 'system', flag_value='darwin')
 def edit_pre(system):
-    # TODO edit os specific scripts
     filename = 'pre-{system}.sh'.format_map(locals()) if system else 'pre.sh'
     pre_script = BASE_DIR / filename
     run(['vim', str(pre_script.absolute())])
     pre_script.chmod(0o750)
     repo = ConfigRepo()
-    repo.add('pre.sh')
-    commit_message = input('Commit message: ')
-    commit_message = commit_message or "Updated {}".format(filename)
+    repo.add(filename)
+    commit_message = input('Commit message: ') or 'Updated Pre-Script'
+    commit_message = '{filename}: {commit_message}'.format_map(locals())
     repo.commit(commit_message)
 
 
