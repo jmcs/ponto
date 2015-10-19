@@ -83,9 +83,14 @@ def clone(git_url: str):
 
 
 @cli.command('edit-pre')
-def edit_pre():
+@click.option('--global', 'system', flag_value=None,
+              default=True)
+@click.option('--linux', 'system', flag_value='linux')
+@click.option('--darwin', 'system', flag_value='darwin')
+def edit_pre(system):
     # TODO edit os specific scripts
-    pre_script = BASE_DIR / 'pre.sh'
+    filename = 'pre-{system}.sh'.format_map(locals()) if system else 'pre.sh'
+    pre_script = BASE_DIR / filename
     run(['vim', str(pre_script.absolute())])
     pre_script.chmod(0o750)
     repo = ConfigRepo()
