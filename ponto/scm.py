@@ -4,7 +4,8 @@ import re
 import os
 from .paths import BASE_DIR
 
-SSH_REGEX = re.compile(r"git@(?P<host>.*):(?P<owner>.*?)\/(?P<repo>.*?)\.git")
+SSH_REGEX = re.compile(r"^(?P<user>\w+?)@(?P<host>.*):(?P<owner>.*?)\/(?P<repo>.*?)\.git")
+SSH_URL_REGEX = re.compile(r"^ssh://(?P<user>\w+?)@(?P<host>.*):(?P<port>.*?)\/(?P<owner>.*?)\/(?P<repo>.*?)\.git")
 
 
 class InvalidRepo(Exception):
@@ -15,7 +16,7 @@ class InvalidRepo(Exception):
 class GitRepository:
     def __init__(self, url):
         self.url = url
-        match = SSH_REGEX.match(url)
+        match = SSH_REGEX.match(url) or SSH_URL_REGEX.match(url)
         if not match:
             raise InvalidRepo(url)
         self.host = match.group('host')  # type: str
