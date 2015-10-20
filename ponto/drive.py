@@ -2,7 +2,7 @@ from pathlib import Path
 from subprocess import run
 import os
 
-from .paths import DRIVE_DIR
+from .paths import HOME, DRIVE_DIR
 
 
 class Drive:
@@ -24,7 +24,7 @@ class Drive:
             finally:
                 os.chdir(str(cwd))
 
-        link_path = Path.home() / Path(local_name)
+        link_path = HOME / Path(local_name)
         target_path = origin_path / drive_name
         try:
             link_path.symlink_to(target_path)

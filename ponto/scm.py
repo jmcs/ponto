@@ -2,7 +2,7 @@ from pathlib import Path
 from subprocess import run
 import re
 import os
-from .paths import BASE_DIR
+from .paths import HOME, BASE_DIR
 
 SSH_REGEX = re.compile(r"^(?P<user>\w+?)@(?P<host>.*):(?P<owner>.*?)\/(?P<repo>.*?)\.git")
 SSH_URL_REGEX = re.compile(r"^ssh://(?P<user>\w+?)@(?P<host>.*):(?P<port>.*?)\/(?P<owner>.*?)\/(?P<repo>.*?)\.git")
@@ -29,7 +29,7 @@ class GitRepository:
 
     @property
     def local_path(self) -> Path:
-        local_repo = Path.home() / 'scm' / self.host / self.owner / self.repo
+        local_repo = HOME / 'scm' / self.host / self.owner / self.repo
         return local_repo
 
     def clone(self):

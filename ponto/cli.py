@@ -6,7 +6,7 @@ import os
 import platform
 from .configuration import open_configuration, save_configuration
 from .drive import Drive
-from .paths import BASE_DIR, CONFIG_PATH, DRIVE_DIR, HOME_PATH, relative_to_home
+from .paths import HOME, BASE_DIR, CONFIG_PATH, DRIVE_DIR, DOTFILES_PATH, relative_to_home
 from .scm import GitRepository, ConfigRepo
 
 cli = click.Group()
@@ -36,11 +36,12 @@ def add_drive(account, local_name, drive_name):
 @click.argument('LINK_NAME')
 def add_link(target, link_name):
     config = open_configuration()
-    link_path = relative_to_home(link_name)
+    link_path_relative = relative_to_home(link_name)
+    link_path = Path(os.path.expanduser(link_name))
     target_path = relative_to_home(target)
     info('Linking {target_path} to {link_path}'.format_map(locals()))
-    link_path.expanduser().symlink_to(target_path.expanduser())
-    config['ln'][str(target_path)] = str(link_path)
+    link_path.symlink_to(os.path.expanduser(target_path))
+    config['ln'][str(target_path)] = str(link_path_relative)
     save_configuration(config)
     repo = ConfigRepo()
     repo.add('ponto.yaml')
@@ -79,7 +80,7 @@ def clone(git_url: str):
         info('Executing pre script')
         run(str(pre_script.absolute()))
 
-    sync(pull=False)
+    sync()
 
 
 @cli.command('edit-pre')
@@ -146,7 +147,7 @@ def init(git_url):
 @cli.command('push')
 def push():
     repo = ConfigRepo()
-    if HOME_PATH.exists():
+    if DOTFILES_PATH.exists():
         repo.add('home')
         # TODO try catch error
         repo.commit('Included local changes')
@@ -163,14 +164,14 @@ def store(path):
         return
 
     print("Storing {path}".format(path=path))
-    relative_path = path.relative_to(Path.home())
+    relative_path = path.relative_to(HOME)
 
     try:
-        HOME_PATH.mkdir(parents=True)
+        DOTFILES_PATH.mkdir(parents=True)
     except FileExistsError:
         pass
 
-    destination = HOME_PATH / relative_path
+    destination = DOTFILES_PATH / relative_path
 
     try:
         destination.parent.mkdir(parents=True)
@@ -188,10 +189,9 @@ def store(path):
 
 
 @cli.command('sync')
-def sync(pull=True):
-    if pull:
-        repo = ConfigRepo()
-        repo.pull()
+def sync():
+    repo = ConfigRepo()
+    repo.pull()
 
     config = open_configuration()
 
@@ -212,8 +212,8 @@ def sync(pull=True):
 
     links = config.get('ln')
     for target, link in links.items():
-        link_path = Path(link).expanduser()
-        target_path = Path(target).expanduser()
+        link_path = Path(os.path.expanduser(link))
+        target_path = Path(os.path.expanduser(target))
         if not link_path.exists():
             info('Linking {target_path} to {link_path}'.format_map(locals()))
             link_path.symlink_to(target_path)
@@ -222,13 +222,13 @@ def sync(pull=True):
 
             # TODO dotfiles
 
-    for path in HOME_PATH.glob('**/*'):
-        relative_path = path.relative_to(HOME_PATH)
-        link_path = Path.home() / relative_path
-        if link_path.exists():
-            # TODO offer to replace
-            print("~/{relative_path} already exists.".format_map(locals()))
-        else:
+    for path in DOTFILES_PATH.glob('**/*'):
+        relative_path = path.relative_to(DOTFILES_PATH)
+        link_path = HOME / relative_path
+        try:
             print("Linking ~/{relative_path}.".format_map(locals()))
             link_path.symlink_to(path)
+        except FileExistsError:
+            # TODO offer to replace
+            print("~/{relative_path} already exists.".format_map(locals()))
 cli()
