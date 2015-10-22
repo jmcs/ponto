@@ -1,4 +1,4 @@
-from clickclick import info
+from clickclick import info, warning
 from pathlib import Path
 from subprocess import run
 import click
@@ -8,13 +8,10 @@ from .configuration import open_configuration, save_configuration
 from .drive import Drive
 from .paths import HOME, BASE_DIR, CONFIG_PATH, DRIVE_DIR, DOTFILES_PATH, relative_to_home
 from .scm import GitRepository, ConfigRepo
+from .utils import program_exists
 
 cli = click.Group()
 
-
-# TODO remove support
-# TODO detect dependencies
-# TODO wget support
 
 @cli.command('add-drive')
 @click.argument('ACCOUNT')
@@ -104,7 +101,6 @@ def edit_pre(system):
 @click.argument("GIT_URL")
 def init(git_url):
     repo = ConfigRepo()
-    # TODO receive remote and push
 
     info("Setting up git repository")
     git_folder = BASE_DIR / '.git'
@@ -195,20 +191,26 @@ def sync():
 
     config = open_configuration()
 
-    drive_points = config.get('drive', {})  # type: dict[str, dict]
-    drive = Drive()
-    for local_name, point in drive_points.items():
-        account = point['account']
-        drive_name = point['drive_name']
-        # TODO ignore on error
-        info('Cloning {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
-        drive.init(account, local_name, drive_name)
+    if program_exists('drive'):
+        drive_points = config.get('drive', {})  # type: dict[str, dict]
+        drive = Drive()
+        for local_name, point in drive_points.items():
+            account = point['account']
+            drive_name = point['drive_name']
+            # TODO ignore on error
+            info('Cloning {account}/{drive_name} to ~/{local_name}'.format_map(locals()))
+            drive.init(account, local_name, drive_name)
+    else:
+        warning('Drive is not installed.')
 
-    scm_urls = config.get('scm', [])  # type: List[str]
-    for url in scm_urls:
-        repository = GitRepository(url)
-        info('Cloning {repo}'.format(repo=repository))
-        repository.clone()
+    if program_exists('git'):
+        scm_urls = config.get('scm', [])  # type: List[str]
+        for url in scm_urls:
+            repository = GitRepository(url)
+            info('Cloning {repo}'.format(repo=repository))
+            repository.clone()
+    else:
+        warning('Git is not installed.')
 
     links = config.get('ln')
     for target, link in links.items():
@@ -220,15 +222,15 @@ def sync():
         else:
             info('{link} already exists'.format_map(locals()))
 
-            # TODO dotfiles
-
     for path in DOTFILES_PATH.glob('**/*'):
         relative_path = path.relative_to(DOTFILES_PATH)
         link_path = HOME / relative_path
         try:
-            print("Linking ~/{relative_path}.".format_map(locals()))
+            info("Linking ~/{relative_path}.".format_map(locals()))
             link_path.symlink_to(path)
         except FileExistsError:
             # TODO offer to replace
             print("~/{relative_path} already exists.".format_map(locals()))
+
+
 cli()
