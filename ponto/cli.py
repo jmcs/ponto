@@ -37,7 +37,7 @@ def add_link(target, link_name):
     link_path = Path(os.path.expanduser(link_name))
     target_path = relative_to_home(target)
     info('Linking {target_path} to {link_path}'.format_map(locals()))
-    link_path.symlink_to(os.path.expanduser(target_path))
+    link_path.symlink_to(os.path.expanduser(str(target_path)))
     config['ln'][str(target_path)] = str(link_path_relative)
     save_configuration(config)
     repo = ConfigRepo()
