@@ -14,7 +14,7 @@ setup(
     author_email='jmcs@jsantos.eu',
     url='https://github.com/jmcs/ponto',
     license='MIT License',
-    install_requires=['click', 'pathlib', 'clickclick', 'requests', 'pip'],
+    install_requires=['click', 'pathlib', 'clickclick', 'requests', 'pip', 'pyyaml'],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
